@@ -15,7 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Used to cache dependencies with a timeout
       - name: Get Date
         id: get-date
         run: |
@@ -33,7 +32,6 @@ jobs:
           path: .buildozer
           key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
 
-      # Install dependencies
       - name: Install dependencies
         run: |
           sudo apt update
@@ -76,43 +74,36 @@ jobs:
             libffi-dev \
             libssl-dev \
             automake
-          # Try to install libtinfo5 and handle cases where it's unavailable
           sudo apt-get install -y libtinfo5 || echo "libtinfo5 not found, proceeding without it"
 
-      # Fallback: manually install libtinfo5 if needed
       - name: Manually install libtinfo5 (if not installed)
         run: |
           if ! dpkg -l | grep -q libtinfo5; then
-            wget http://archive.ubuntu.com/ubuntu/pool/main/n/ncurses/libtinfo5_6.2-0ubuntu2_amd64.deb
-            sudo dpkg -i libtinfo5_6.2-0ubuntu2_amd64.deb
+            sudo apt-get update
+            sudo apt-get install -y libtinfo5
           fi
 
-      # Set up Java 17 required by Gradle
       - name: Setup Java 17 required by Gradle
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.8'
 
-      # Install pip dependencies
       - name: Install pip dependencies
         run: |
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      # Build with Buildozer
       - name: Build with Buildozer
         id: buildozer
         run: |
           yes | buildozer -v android debug
 
-      # Upload artifacts
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
